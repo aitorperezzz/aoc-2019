@@ -30,14 +30,20 @@ function processData(stringData)
     let sum = 0;
     for (let i = 0; i < numbers.length; i++)
     {
-        // Check that the string is valid.
+        // Check the string is valid.
         if (numbers[i])
         {
             console.log('Current number: ' + numbers[i]);
-            sum += ((Math.floor(parseInt(numbers[i], 10) / 3)) - 2);
-            console.log('Current sum: ' + sum);
+            sum += calculateFuelForMass(parseInt(numbers[i], 10));
         }
     }
 
     return sum;
+}
+
+// Receive a mass and calculate the fuel required by it.
+function calculateFuelForMass(mass)
+{
+    let fuel = Math.floor(mass / 3) - 2;
+    return fuel > 0 ? fuel + calculateFuelForMass(fuel) : 0;
 }
