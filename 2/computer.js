@@ -1,8 +1,9 @@
-// This module exports the execute function.
+// Define the exports of this module.
 exports.execute = execute;
 exports.print = print;
 
-// Receives an array as an intcode and executes the instructions.
+// Receives a reference to an array of ints that represents the program and executes 
+// the instructions.
 function execute(board)
 {
     let position = 0;
@@ -44,22 +45,14 @@ function print(board)
     console.log(text);
 }
 
+// Executes the sum operation.
 function executeSum(board, position1, position2, destination)
 {
     board[destination] = board[position1] + board[position2];
 }
 
+// Executes the product operation.
 function executeProduct(board, position1, position2, destination)
 {
     board[destination] = board[position1] * board[position2];
-}
-
-
-
-
-
-
-function executeBoard(board)
-{
-    
 }
