@@ -1,6 +1,9 @@
 // File system module to load data from files.
 const fs = require('fs');
 
+// Import module of the computer.
+const computer = require('./computer.js');
+
 // Name of the input file.
 let FILENAME = 'input.dat';
 if (process.argv[2])
@@ -43,68 +46,13 @@ function solveProblem(fileName)
             }
 
             // Execute the program inside the board.
-            executeBoard(board);
+            let result = computer.execute(board);
 
             // Print the resulting board.
-            printBoard(board);
+            computer.print(board);
 
             // Print the result wanted.
-            console.log('\nResult: ' + getResult(board));
+            console.log('\nResult: ' + result);
         }
     });
-}
-
-function executeBoard(board)
-{
-    let position = 0;
-    while (position < board.length)
-    {
-        switch (board[position])
-        {
-            case 1:
-                executeSum(board, board[position + 1], board[position + 2], board[position + 3]);
-                position += 4;
-                continue;
-            case 2:
-                executeProduct(board, board[position + 1], board[position + 2], board[position + 3]);
-                position += 4;
-                continue;
-            case 99:
-                return;
-            default:
-                console.log('Error: opcode ' + board[position] + ' not recognised!');
-                return;
-        }
-    }
-}
-
-function printBoard(board)
-{
-    console.log('Current status of the board: ');
-    let text = '';
-    for (let i = 0; i < board.length; i++)
-    {
-        text += board[i];
-        if (i != board.length - 1)
-        {
-            text += ',';
-        }
-    }
-
-    console.log(text);
-}
-
-function executeSum(board, position1, position2, destination)
-{
-    board[destination] = board[position1] + board[position2];
-}
-
-function executeProduct(board, position1, position2, destination)
-{
-    board[destination] = board[position1] * board[position2];
-}
-
-function getResult(board)
-{
-    return board[0];
 }
