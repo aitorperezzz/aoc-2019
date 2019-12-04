@@ -1,6 +1,6 @@
 // Functions exported by this module.
 exports.parseInstructions = parseInstructions;
-exports.parsePositions = parsePositions;
+exports.parsePositionsAndSteps = parsePositionsAndSteps;
 exports.equalPosition = equalPosition;
 exports.manhattanDistance = manhattanDistance;
 
@@ -16,8 +16,9 @@ function parseInstructions(rawInstructions, instructions)
     }
 }
 
-// Transforms a set of instructions into a set of positions.
-function parsePositions(instructions, positions)
+// Transforms a set of instructions into a set of positions plus steps.
+// These steps are steps taken to reach each position of the wire.
+function parsePositionsAndSteps(instructions, positions)
 {
     // Current number of elements in positions array.
     let numberPositions = 0;
@@ -66,8 +67,28 @@ function parsePositions(instructions, positions)
         {
             positions.push({
                 x: positions[numberPositions].x + velocity.x,
-                y: positions[numberPositions].y + velocity.y
+                y: positions[numberPositions].y + velocity.y,
+                steps: undefined
             });
+
+            // Check if this position has been previously visited.
+            for (let j = 0; j < numberPositions + 1; j++)
+            {
+                if (equalPosition(positions[j], positions[numberPositions + 1]))
+                {
+                    // This position had been previously visited, so get that value of steps.
+                    positions[numberPositions + 1].steps = positions[j].steps;
+                    break;
+                }
+            }
+
+            // If this position was never visited, put the normal steps.
+            if (positions[numberPositions + 1].steps == undefined)
+            {
+                positions[numberPositions + 1].steps = numberPositions + 1;
+            }
+
+            // Update the number of steps.
             numberPositions++;
         }
     }

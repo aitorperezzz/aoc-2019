@@ -44,19 +44,19 @@ function solveProblem(fileName)
 
             // Fill the positions of each wire.
             let positions1 = [], positions2 = [];
-            utils.parsePositions(instructions1, positions1);
-            utils.parsePositions(instructions2, positions2);
+            utils.parsePositionsAndSteps(instructions1, positions1);
+            utils.parsePositionsAndSteps(instructions2, positions2);
 
-            // Calculate the distance to the nearest intersection point.
-            let distance = calculateMinDistance(positions1, positions2);
-            console.log('Minimal distance between the two wires: ' + distance);
+            // Solve both problems at the same time.
+            let results = getResults(positions1, positions2);
+            console.log('Minimal distance between the two wires: ' + results.minDistanceValue);
+            console.log('Minimal signal delay: ' + results.minDelayValue);
         }
     });
 }
 
-// Receives two wires and gives the distance from the initial common point
-// to the nearest intersection point.
-function calculateMinDistance(positions1, positions2)
+// Receives the positions of the two wires and calculates the results for day three.
+function getResults(positions1, positions2)
 {
     // Common point of departure of the two wires.
     let initialPosition = {
@@ -65,29 +65,44 @@ function calculateMinDistance(positions1, positions2)
     };
 
     // Declare an initial closest intersection for the algorithm and minimal distance.
-    let closestIntersection = {
+    let minDistancePosition = {
         x: undefined,
         y: undefined
     };
-    let minDistance = Infinity;
+    let minDistanceValue = Infinity;
+
+    // Declare the intersection with minimal signal delay.
+    let minDelayPosition = {
+        x: undefined,
+        y: undefined
+    };
+    let minDelayValue = Infinity;
 
     // Traverse the first wire.
-    let intersection;
     for (let i = 1; i < positions1.length; i++)
     {
+        // First update the number of steps for this position.
         // Check if this one element is found in the other wire's array of positions.
         for (let j = 1; j < positions2.length; j++)
         {
-            // Check if both wires share the same position.
+            // Check if both wires intersect at this position.
             if (utils.equalPosition(positions1[i], positions2[j]))
             {
                 // Check if this point is closer than the previous intersection point.
-                if (utils.manhattanDistance(positions1[i], initialPosition) < minDistance)
+                if (utils.manhattanDistance(positions1[i], initialPosition) < minDistanceValue)
                 {
                     // Update the optimal position.
-                    minDistance = utils.manhattanDistance(positions1[i], initialPosition);
-                    closestIntersection.x = positions1[i].x;
-                    closestIntersection.y = positions1[i].y;
+                    minDistanceValue = utils.manhattanDistance(positions1[i], initialPosition);
+                    minDistancePosition.x = positions1[i].x;
+                    minDistancePosition.y = positions1[i].y;
+                }
+
+                // Check if this intersection point has better delay signal.
+                if (positions1[i].steps + positions2[j].steps < minDelayValue)
+                {
+                    minDelayPosition.x = positions1[i].x;
+                    minDelayPosition.y = positions1[i].y;
+                    minDelayValue = positions1[i].steps + positions2[j].steps;
                 }
 
                 // Continue with the loop because one intersection has been found.
@@ -96,5 +111,8 @@ function calculateMinDistance(positions1, positions2)
         }
     }
 
-    return minDistance;
+    return {
+        minDistanceValue: minDistanceValue,
+        minDelayValue: minDelayValue,
+    };
 }
