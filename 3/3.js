@@ -1,11 +1,15 @@
 // Module to load data from a file.
 const fs = require('fs');
 
-const FILENAME = 'input.dat';
+// Decide the name of the file to load.
+let FILENAME = 'input.dat';
+if (process.argv[2])
+{
+    FILENAME = process.argv[2];
+}
 
 // Solve the problem.
 solveProblem(FILENAME);
-
 
 function solveProblem(fileName)
 {
@@ -63,12 +67,7 @@ function calculateMinDistance(instructions1, instructions2)
     fillPositions(instructions1, positions1);
     fillPositions(instructions2, positions2);
 
-    // Transform each set of points into a set of segments.
-    let segments1 = [], segments2 = [];
-    fillSegments(positions1, segments1);
-    fillSegments(positions2, segments2);
-
-    // Declare the initial point of departure of the two wires.
+    // Common point of departure of the two wires.
     let initialPosition = {
         x: 0,
         y: 0
@@ -76,27 +75,28 @@ function calculateMinDistance(instructions1, instructions2)
 
     // Declare an initial closest intersection for the algorithm and minimal distance.
     let closestIntersection = {
-        x: 0,
-        y: 0
+        x: undefined,
+        y: undefined
     };
     let minDistance = Infinity;
 
     // Traverse the first wire.
     let intersection;
-    for (segment1 in segments1)
+    for (let i = 1; i < positions1.length; i++)
     {
         // Check if this one element is found in the other wire's array of positions.
-        for (segment2 in segments2)
+        for (let j = 1; j < positions2.length; j++)
         {
-            intersection = intersect(segment1, segment2);
-            if (intersection != undefined)
+            // Check if both wires share the same position.
+            if (equalPosition(positions1[i], positions2[j]))
             {
-                if (manhattanDistance(intersection, initialPosition) < minDistance)
+                // Check if this point is closer than the previous intersection point.
+                if (manhattanDistance(positions1[i], initialPosition) < minDistance)
                 {
                     // Update the optimal position.
-                    minDistance = manhattanDistance(intersection, initialPosition);
-                    closestIntersection.x = intersection.x;
-                    closestIntersection.y = intersection.y;
+                    minDistance = manhattanDistance(positions1[i], initialPosition);
+                    closestIntersection.x = positions1[i].x;
+                    closestIntersection.y = positions1[i].y;
                 }
 
                 // Continue with the loop because one intersection has been found.
@@ -119,6 +119,12 @@ function fillPositions(instructions, positions)
         y: 0
     });
 
+    // Declare a velocity for each instruction.
+    let velocity = {
+        x: 0,
+        y: 0
+    };
+
     // Follow each of the instructions.
     for (let i = 0; i < instructions.length; i++)
     {
@@ -126,60 +132,44 @@ function fillPositions(instructions, positions)
         switch (instructions[i].letter)
         {
             case 'U':
-                positions.push({
-                    x: positions[numberPositions].x,
-                    y: positions[numberPositions].y + instructions[i].steps
-                });
+                velocity.x = 0;
+                velocity.y = 1;
                 break;
             case 'D':
-                positions.push({
-                    x: positions[numberPositions].x,
-                    y: positions[numberPositions].y - instructions[i].steps
-                });
+                velocity.x = 0;
+                velocity.y = -1;
                 break;
             case 'R':
-                positions.push({
-                    x: positions[numberPositions].x + instructions[i].steps,
-                    y: positions[numberPositions].y
-                });
+                velocity.x = 1;
+                velocity.y = 0;
                 break;
             case 'L':
-                positions.push({
-                    x: positions[numberPositions].x - instructions[i].steps,
-                    y: positions[numberPositions].y
-                });
+                velocity.x = -1;
+                velocity.y = 0;
                 break;
             default:
                 console.log('The letter ' + instructions[i].letter + ' of the instruction was not recognised!');
                 return 1;
         }
 
-        numberPositions++;
+        // Fill all positions following the velocity.
+        for (let k = 0; k < instructions[i].steps; k++)
+        {
+            positions.push({
+                x: positions[numberPositions].x + velocity.x,
+                y: positions[numberPositions].y + velocity.y
+            });
+            numberPositions++;
+        }
     }
 
     return 0;
 }
 
-function fillSegments(positions, segments)
+// Decide if two positions are equal.
+function equalPosition(position1, position2)
 {
-    for (let i = 0; i < positions.length - 1; i++)
-    {
-        segments.push({
-            initialx: positions[i].x,
-            initialy: positions[i].y,
-            finalx: positions[i + 1].x,
-            finaly: positions[i + 1].y,
-        });
-    }
-}
-
-// Decides if two segments intersect and gives the intersection point.
-function intersect(segment1, segment2)
-{
-    if (segment1.initialy == segment1.finaly)
-    {
-        // Segment 1 is vertical
-    }
+    return position1.x == position2.x && position1.y == position2.y;
 }
 
 // Calculates the manhattan distance between two positions.
