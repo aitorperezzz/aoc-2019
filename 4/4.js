@@ -24,9 +24,10 @@ function solveProblem(fileName)
             // Log the limits to the terminal.
             console.log('Range of numbers: ' + numbers[0] + '->' + numbers[1]);
 
-            // Calculate the number of passwords.
+            // Calculate the number of valid passwords.
             let result = calculate(numbers[0], numbers[1]);
-            console.log('Number of passwords: ' + result);
+            console.log('Number of passwords (weak condition): ' + result.weak);
+            console.log('Number of passwords (strong condition): ' + result.strong);
         }
     });
 }
@@ -34,19 +35,33 @@ function solveProblem(fileName)
 function calculate(begin, end)
 {
     // Variable to count the number of valid passwords.
-    let count = 0;
+    let weak = 0, strong = 0;
 
     // Iterate over the range provided.
     for (let i = begin; i <= end; i++)
     {
-        if (increasingOrder(i) && hasTwoEqualDigits(i))
+        if (increasingOrder(i))
         {
-            // This number is valid, count one.
-            count++;
+            if (hasTwoEqualDigits(i))
+            {
+                // The weak condition applies.
+                console.log(i + ' valido debil');
+                weak++;
+
+                if (hasTwoEqualDigitsStrong(i))
+                {
+                    // The strong condition applies.
+                    console.log(i + ' valido fuerte');
+                    strong++;
+                }
+            }
         }
     }
 
-    return count;
+    return {
+        weak: weak,
+        strong: strong
+    };
 }
 
 // Receives a number and decides if its digits are ordered.
@@ -64,9 +79,10 @@ function increasingOrder(number)
     return true;
 }
 
-function hasTwoEqualDigits(number, strong)
+function hasTwoEqualDigits(number)
 {
     let stringNumber = number.toString();
+
     for (let i = 0; i < stringNumber.length - 1; i++)
     {
         if (parseInt(stringNumber.charAt(i), 10) == parseInt(stringNumber.charAt(i + 1), 10))
@@ -76,4 +92,36 @@ function hasTwoEqualDigits(number, strong)
     }
 
     return false;
+}
+
+function hasTwoEqualDigitsStrong(test)
+{
+    let stringNumber = test.toString();
+
+    let repeated = 0;
+    let number = undefined;
+
+    for (let i = 0; i < stringNumber.length - 1; i++)
+    {
+        if (parseInt(stringNumber.charAt(i), 10) == parseInt(stringNumber.charAt(i + 1), 10))
+        {
+            number = parseInt(stringNumber.charAt(i), 10);
+            if (number == parseInt(stringNumber.charAt(i), 10))
+            {
+                repeated++;
+            }
+        }
+        else if (repeated == 1)
+        {
+            return true;
+        }
+        else
+        {
+            // The number has changed, reset variables.
+            repeated = 0;
+            number = undefined;
+        }
+    }
+
+    return repeated == 1 ? true : false;
 }
