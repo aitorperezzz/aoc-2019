@@ -2,7 +2,7 @@
 const fs = require('fs');
 
 // Import module of the computer.
-const computer = require('./computer.js');
+const computer = require('../computer.js');
 
 // Name of the input file.
 let FILENAME = 'input.dat';
@@ -45,14 +45,14 @@ function solveProblem(fileName)
                 }
             }
 
-            // Execute the program inside the board.
-            let result = computer.execute(board);
+            // Execute the instructions in the board.
+            computer.execute(board);
 
             // Print the resulting board.
             computer.print(board);
 
             // Print the result wanted.
-            console.log('\nResult: ' + result);
+            console.log('\nResult: ' + board[0]);
         }
     });
 }

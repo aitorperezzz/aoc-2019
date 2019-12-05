@@ -1,13 +1,13 @@
-// Import module to load info from files.
+// Module to load data from files.
 const fs = require('fs');
 
-// Import module to execute the commands of the computer.
-const computer = require('./computer.js');
+// Import the computer to execute instructions.
+const computer = require('../computer.js');
 
 // Final result we are looking for.
 const SOLUTION = 19690720;
 
-// File with the initial memory for all the tries.
+// File with the initial memory.
 const FILENAME = 'initialMemory.dat';
 
 // Find the solution to the problem.
@@ -30,7 +30,7 @@ function solveProblem(fileName)
             // Transform into an array separating by commas.
             let board = parsedData.split(',');
 
-            // Remove any unwanted elements in the array.
+            // Remove any unwanted elements in the board array.
             for (let i = board.length - 1; i >= 0; i--)
             {
                 if (!board[i])
@@ -45,7 +45,7 @@ function solveProblem(fileName)
                 }
             }
 
-            // Pass this initial memory.
+            // Find the solution to the board.
             let results = findValues(board);
             if (results != undefined)
             {
@@ -58,7 +58,6 @@ function solveProblem(fileName)
             {
                 console.log('No solution could be found...');
             }
-            
         }
     });
 }
@@ -67,6 +66,8 @@ function solveProblem(fileName)
 function findValues(initialMemory)
 {
     let currentMemory = [];
+
+    // Try all nouns and verbs from 0 to 99, both included.
     for (let noun = 0; noun < 100; noun++)
     {
         for (let verb = 0; verb < 100; verb++)
@@ -82,10 +83,11 @@ function findValues(initialMemory)
             currentMemory[1] = noun;
             currentMemory[2] = verb;
 
-            // Find the solution.
-            solution = computer.execute(currentMemory);
+            // Execute the instructions in the board.
+            computer.execute(currentMemory);
 
-            if (solution == SOLUTION)
+            // The solution is found in the first position of the board.
+            if (currentMemory[0] == SOLUTION)
             {
                 return {
                     noun: noun,
