@@ -1,0 +1,28 @@
+{
+  "name": "advent-of-code",
+  "version": "1.0.0",
+  "description": "Solution for advent of code 2019 problems",
+  "main": "null",
+  "dependencies": {
+    "readline-sync": "^1.4.10"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sregea/advent-of-code-2019.git"
+  },
+  "keywords": [
+    "js",
+    "advent-of-code",
+    "nodejs"
+  ],
+  "author": "Aitor Perez",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sregea/advent-of-code-2019/issues"
+  },
+  "homepage": "https://github.com/sregea/advent-of-code-2019#readme"
+}
