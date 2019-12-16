@@ -10,24 +10,26 @@ class Planet():
         self.parent = None
         self.children = []
 
-def distanceToCOM(originName, planetList):
-    planet = planetList[originName]
 
+# Receives the name of a planet and calculates its distance to COM.
+def distanceToCOM(origin, planetDict):
+    planet = planetDict[origin]
     if planet.parent == None:
-        # We found the COM point, the only one without parent.
+        # This is the COM point, the only one without a parent.
         return 0
     else:
         # Recursively find the distance.
-        return 1 + distanceToCOM(planet.parent, planetList)
+        return 1 + distanceToCOM(planet.parent, planetDict)
+
 
 # Gets the orbit information from a file and parses it to
-# a dictionary.
+# a planet dictionary.
 def parseData(fileName):
     # Open the file and extract the orbits.
     with open(fileName, 'r') as file:
         orbits = file.readlines()
 
-    # Parse the orbits into a dict of planet informations.
+    # Parse the orbits into a dict of planet infos.
     planetDict = {}
     for orbit in orbits:
         # Get the names of the planet and the child.
@@ -50,50 +52,55 @@ def parseData(fileName):
 
     return planetDict
 
+
 # Implements Djikstra algorithm to find the shortest path between
 # origin and destination.
 def dijkstra(planetDict, origin, destination):
-    # Tentative distance dictionary. All have infinity in the start
-    # except for origin, which has 0.
-    distanceUnvisited = {}
+    # Dictionary with tentative distances for all unvisited nodes.
+    unvisited = {}
 
     # Dictionary with the previous node for each node.
     previous = {}
 
-    # Add all planets to the unvisited list, with infinity distance.
+    # Add all the planets to the unvisited dict, and set distance to infinity.
     for planet in planetDict:
-        distanceUnvisited[planet] = math.inf
+        unvisited[planet] = math.inf
 
-    # The origin needs to have zero distance.
-    distanceUnvisited[origin] = 0
+    # Now, the origin needs to have zero distance to start the algorithm.
+    unvisited[origin] = 0
 
-    # Go through the unvisted set.
-    while distanceUnvisited:
+    # Go through the unvisited set.
+    while unvisited:
         # Select the node with minimal distance among the unvisited.
-        current = min(distanceUnvisited, key=distanceUnvisited.get)
-        currentDistance = distanceUnvisited[current]
+        current = min(unvisited, key=unvisited.get)
+        currentDistance = unvisited[current]
 
-        # Check if this is the final node.
+        # Check if this is the final node and return.
         if current == destination:
             return currentDistance
 
-        # Remove this node from the unvisited list.
-        del distanceUnvisited[current]
+        # Remove this node from the unvisited set.
+        del unvisited[current]
 
-        # Get all the neighbors of the current node.
+        # Select the neighbors of the current node.
+        # These are planets orbiting and orbited by the current planet.
         neighbors = planetDict[current].children.copy()
         neighbors.append(planetDict[current].parent)
 
         # Iterate over all the neighbors of the current node.
         for neighbor in neighbors:
             # Only the ones that are unvisited.
-            if neighbor in distanceUnvisited:
+            if neighbor in unvisited:
                 # Get new estimate for the distance.
                 dist = currentDistance + 1
-                if dist < distanceUnvisited[neighbor]:
-                    distanceUnvisited[neighbor] = dist
+                if dist < unvisited[neighbor]:
+                    unvisited[neighbor] = dist
                     previous[neighbor] = current
 
+    return None
+
+
+# Solves the two parts of the problem given a filename.
 def solveProblem(fileName):
     # Parse the data to a dictionary.
     planetDict = parseData(fileName)
@@ -104,10 +111,11 @@ def solveProblem(fileName):
         # Sum the distance to COM of this object.
         count = count + distanceToCOM(planet, planetDict)
 
-    # Calculate the shortest path between YOU and SAN.
-    shortestPath = dijkstra(planetDict, 'YOU', 'SAN')
+    # Calculate the distance between YOU and SAN.
+    distance = dijkstra(planetDict, 'YOU', 'SAN')
 
-    return {'orbits':count, 'shortest':shortestPath}
+    return {'orbits':count, 'shortest':distance - 2}
+
 
 # Solve the problem, part one and part two.
 result = solveProblem(FILENAME)
