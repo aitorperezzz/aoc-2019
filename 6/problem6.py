@@ -1,48 +1,52 @@
-# Class that has the name of the father orbit and child orbit.
-# The child is the one that orbits the father.
-class OrbitInfo():
-    def __init__(self, father, child):
-        self.father = father
-        self.child = child
+# Class for a planet's info.
+class Planet():
+    def __init__(self):
+        self.parent = None
+        self.children = []
 
-def distanceFromTo(origin, destination, orbitInfo):
-    if origin == destination:
+def distanceToCOM(originName, planetList):
+    planet = planetList[originName]
+
+    if planet.parent == None:
+        # We found the COM point, the only one without parent.
         return 0
     else:
-        for info in orbitInfo:
-            if info.child == origin:
-                return 1 + distanceFromTo(info.father, destination, orbitInfo)
+        # Recursively find the distance.
+        return 1 + distanceToCOM(planet.parent, planetList)
 
 def calculateNumberOrbits(fileName):
     # Open the file and extract the orbits.
     with open(fileName, 'r') as file:
         orbits = file.readlines()
 
-    # Parse the orbits into a list of orbit infos.
-    orbitInfo = []
+    # Parse the orbits into a dict of planet informations.
+    planetList = {}
     for orbit in orbits:
-        # Get the names of the father and child.
-        father = orbit.split(')')[0]
-        child = orbit.split(')')[1].rstrip('\n')
+        # Get the names of the planet and the child.
+        planetName = orbit.split(')')[0]
+        childName = orbit.split(')')[1].rstrip('\n')
 
-        # Add this info to the list of orbit infos.
-        orbitInfo.append(OrbitInfo(father, child))
+        # Create the child planet if it does not yet exist.
+        if not childName in planetList:
+            planetList[childName] = Planet()
+
+        # Set the name of the parent.
+        planetList[childName].parent = planetName
+
+        # Create the parent planet if it does not yet exist.
+        if not planetName in planetList:
+            planetList[planetName] = Planet()
+        
+        # Set the child of the parent planet.
+        planetList[planetName].children.append(childName)
 
     # Total of direct and indirect orbits.
-    direct = 0
-    indirect = 0
-    for info in orbitInfo:
-        # One more direct orbit.
-        direct = direct + 1
+    count = 0
+    for planet in planetList:
+        # Sum the distance to COM of this object.
+        count = count + distanceToCOM(planet, planetList)
 
-        # Calculate the distance to COM.
-        distanceToCOM = distanceFromTo(info.child, 'COM', orbitInfo)
-
-        # Only if COM is two steps away or more, add indirect orbits
-        if distanceToCOM > 1:
-            indirect = indirect + distanceToCOM - 1
-
-    return direct + indirect
+    return count
 
 # Execute the script with the data provided.
 result = calculateNumberOrbits('input.dat')
