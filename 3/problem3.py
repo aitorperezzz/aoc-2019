@@ -12,21 +12,31 @@ class Point():
         self.y = y
         self.distance = abs(self.x) + abs(self.y)
 
+        # A point can have a minimal delay associated. None by default.
+        self.steps = None
+
 # Segment class (only vertical or horizontal segments).
 class Segment():
-    def __init__(self, point1, point2):
-        if point1.x == point2.x:
+    def __init__(self, initial, final):
+        # First keep a copy of the initial and final points.
+        self.initial = Point(initial.x, initial.y)
+        self.final = Point(final.x, final.y)
+
+        if initial.x == final.x:
             # Vertical segment.
             self.type = 'ver'
-            self.x = point1.x
-            self.miny = min(point1.y, point2.y)
-            self.maxy = max(point1.y, point2.y)
+            self.x = initial.x
+            self.miny = min(initial.y, final.y)
+            self.maxy = max(initial.y, final.y)
         else:
             # Horizontal segment.
             self.type = 'hor'
-            self.y = point1.y
-            self.minx = min(point1.x, point2.x)
-            self.maxx = max(point1.x, point2.x)
+            self.y = initial.y
+            self.minx = min(initial.x, final.x)
+            self.maxx = max(initial.x, final.x)
+
+        # Keep a list of possible self-intersections for this segment.
+        self.selfIntersections = []
 
 
 # Receives a line of raw instructions and returns a list of segments.
@@ -104,11 +114,53 @@ def getClosest(intersection):
     return best
 
 
+# For part one, find the distance to the closest intersection.
 def closestIntersection(wire1, wire2):
     # Initially, the closest intersection point is infinity.
     closest = Point(math.inf, math.inf)
 
     # Traverse both lists of segments finding the closest intersection.
+    for segment1 in wire1:
+        for segment2 in wire2:
+            intersection = getIntersection(segment1, segment2)
+            if intersection:
+                # In case the intersection is made up of several points, 
+                # find the closest one.
+                candidate = getClosest(intersection)
+                if candidate.distance < closest.distance and candidate.x != 0 and candidate.y != 0:
+                    closest = Point(candidate.x, candidate.y)
+
+    return closest.distance
+
+def getSteps(intersectionPoint, segment1, segment2):
+    if segment1.initial.steps < segment2.initial.steps:
+
+def parseSelfIntersections(wire):
+    for segment in wire:
+        for segmentAux in wire:
+            if segment != segmentAux:
+                # Get all self-intersections.
+                intersection = getIntersection(segment, segmentAux)
+                if intersection:
+                    for point in intersection:
+                        intersectionPoint = Point(point.x, point.y)
+                        intersectionPoint.steps = getSteps(intersectionPoint, segment, segmentAux)
+                else:
+
+
+# For the second part, find the distance to the minimal delay intersection.
+def minimalSignalDelay(wire1, wire2):
+    intersections = []
+
+    # Initially, the point with minimal delay is infinity.
+    minimalDelayPoint = Point(math.inf, math.inf)
+    minimalDelayPoint.minimalDelay = math.inf
+
+    # Parse the self-intersections for each wire.
+    parseSelfIntersections(wire1)
+    parseSelfIntersections(wire2)
+
+    # Traverse both lists of segments finding the point of minimal delay.
     for segment1 in wire1:
         for segment2 in wire2:
             intersection = getIntersection(segment1, segment2)
@@ -133,7 +185,6 @@ def solveProblem(fileName):
 
     # Calculate the intersection point with minimal distance.
     return closestIntersection(wire1, wire2)
-    
 
 result = solveProblem(FILENAME)
 print('Distance to the closest intersection: ' + str(result))
