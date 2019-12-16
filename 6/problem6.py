@@ -101,7 +101,7 @@ def dijkstra(planetDict, origin, destination):
 
 
 # Solves the two parts of the problem given a filename.
-def solveProblem(fileName):
+def solveProblem(fileName, calculateDistance):
     # Parse the data to a dictionary.
     planetDict = parseData(fileName)
 
@@ -112,12 +112,15 @@ def solveProblem(fileName):
         count = count + distanceToCOM(planet, planetDict)
 
     # Calculate the distance between YOU and SAN.
-    distance = dijkstra(planetDict, 'YOU', 'SAN')
+    if calculateDistance:
+        distance = dijkstra(planetDict, 'YOU', 'SAN') - 2
+    else:
+        distance = None
 
-    return {'orbits':count, 'shortest':distance - 2}
+    return {'orbits':count, 'shortest':distance}
 
 
 # Solve the problem, part one and part two.
-result = solveProblem(FILENAME)
+result = solveProblem(FILENAME, True)
 print('Sum of direct and indirect orbits: {}'.format(result['orbits']))
 print('Shortest path between YOU and SAN: {}'.format(result['shortest']))
