@@ -1,6 +1,7 @@
 import sys
 import math
 
+# Choose a name for the input file.
 FILENAME = 'input.dat'
 if len(sys.argv) == 2:
     FILENAME = sys.argv[1]
@@ -10,15 +11,18 @@ class Point():
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
+        # Calculate Manhattan distance to the origin.
         self.distance = abs(self.x) + abs(self.y)
 
-        # A point can have a minimal delay associated. None by default.
-        self.steps = None
+        # A point can have a minimal signal delay associated.
+        self.minimalSignalDelay = None
 
-# Segment class (only vertical or horizontal segments).
+# Segment class (vertical or horizontal segments).
 class Segment():
     def __init__(self, initial, final):
-        # First keep a copy of the initial and final points.
+
+        # Keep a copy of the initial and final points.
         self.initial = Point(initial.x, initial.y)
         self.final = Point(final.x, final.y)
 
@@ -35,8 +39,8 @@ class Segment():
             self.minx = min(initial.x, final.x)
             self.maxx = max(initial.x, final.x)
 
-        # Keep a list of possible self-intersections for this segment.
-        self.selfIntersections = []
+        # Keep the acumulated steps until this segment.
+        self.steps = 0
 
 
 # Receives a line of raw instructions and returns a list of segments.
@@ -46,6 +50,7 @@ def parseInstructions(raw):
     instructions = raw.split(',')
 
     # Fill in the segments according to each instruction.
+    totalSteps = 0
     for instruction in instructions:
         step = int(instruction[1:])
 
@@ -59,11 +64,14 @@ def parseInstructions(raw):
         elif instruction[0] == 'L':
             finalPoint = Point(initialPoint.x - step, initialPoint.y)
 
-        # Add the new segment given the initial and final points.
-        segments.append(Segment(initialPoint, finalPoint))
+        # Create a new segment and add it to the list.
+        segment = Segment(initialPoint, finalPoint)
+        segment.steps = totalSteps
+        segments.append(segment)
 
-        # Update the initial point.
+        # Update the initial point and the total of steps.
         initialPoint = Point(finalPoint.x, finalPoint.y)
+        totalSteps += step
 
     return segments
 
@@ -77,7 +85,7 @@ def simpleIntersection(horizontal, vertical):
     return None
 
 
-# Gets a possible array of points as the intersection of two segments.
+# Gets all the points in the intersection between two segments.
 def getIntersection(segment1, segment2):
     intersection = []
 
@@ -105,73 +113,65 @@ def getIntersection(segment1, segment2):
     return intersection
 
 
-# Gets an array of points and finds the closest to the origin.
-def getClosest(intersection):
+# Receives a list of points and finds the closest to the origin.
+def getClosest(points):
     best = Point(math.inf, math.inf)
-    for point in intersection:
+    for point in points:
         if point.distance < best.distance:
             best = Point(point.x, point.y)
     return best
 
 
-# For part one, find the distance to the closest intersection.
-def closestIntersection(wire1, wire2):
-    # Initially, the closest intersection point is infinity.
-    closest = Point(math.inf, math.inf)
+# Receives a point inside a segment and calculates the partial signal delay.
+def getPartialDelay(point, segment):
+    if segment.type == 'hor':
+        return abs(point.x - segment.initial.x)
+    else:
+        return abs(point.y - segment.initial.y)
 
-    # Traverse both lists of segments finding the closest intersection.
-    for segment1 in wire1:
-        for segment2 in wire2:
-            intersection = getIntersection(segment1, segment2)
-            if intersection:
-                # In case the intersection is made up of several points, 
-                # find the closest one.
-                candidate = getClosest(intersection)
-                if candidate.distance < closest.distance and candidate.x != 0 and candidate.y != 0:
-                    closest = Point(candidate.x, candidate.y)
+def updateMinimalDelayInfo(point, segment1, segment2):
+    partialDelay1 = getPartialDelay(point, segment1)
+    partialDelay2 = getPartialDelay(point, segment2)
 
-    return closest.distance
+    point.minimalSignalDelay = segment1.steps + segment2.steps + partialDelay1 + partialDelay2
 
-def getSteps(intersectionPoint, segment1, segment2):
-    if segment1.initial.steps < segment2.initial.steps:
+# Find the minimal distance to an intersection, and also
+# the minimal signal delay to an intersection.
+def findMinimalValues(wire1, wire2):
 
-def parseSelfIntersections(wire):
-    for segment in wire:
-        for segmentAux in wire:
-            if segment != segmentAux:
-                # Get all self-intersections.
-                intersection = getIntersection(segment, segmentAux)
-                if intersection:
-                    for point in intersection:
-                        intersectionPoint = Point(point.x, point.y)
-                        intersectionPoint.steps = getSteps(intersectionPoint, segment, segmentAux)
-                else:
-
-
-# For the second part, find the distance to the minimal delay intersection.
-def minimalSignalDelay(wire1, wire2):
-    intersections = []
-
-    # Initially, the point with minimal delay is infinity.
+    # Initial minimal points are at infinity.
+    closestPoint = Point(math.inf, math.inf)
     minimalDelayPoint = Point(math.inf, math.inf)
-    minimalDelayPoint.minimalDelay = math.inf
+    minimalDelayPoint.minimalSignalDelay = math.inf
 
-    # Parse the self-intersections for each wire.
-    parseSelfIntersections(wire1)
-    parseSelfIntersections(wire2)
-
-    # Traverse both lists of segments finding the point of minimal delay.
+    # Traverse all combinations of segments.
     for segment1 in wire1:
         for segment2 in wire2:
-            intersection = getIntersection(segment1, segment2)
-            if intersection:
-                # In case the intersection is made up of several points, 
-                # find the closest one.
-                candidate = getClosest(intersection)
-                if candidate.distance < closest.distance and candidate.x != 0 and candidate.y != 0:
-                    closest = Point(candidate.x, candidate.y)
 
-    return closest.distance
+            # Get the complete intersection between the segments.
+            intersection = getIntersection(segment1, segment2)
+
+            if intersection:
+                # Find the closest point in the intersection as a candidate.
+                candidate = getClosest(intersection)
+
+                # Update the best if needed.
+                if candidate.distance < closestPoint.distance and candidate.x != 0 and candidate.y != 0:
+                    closestPoint = Point(candidate.x, candidate.y)
+                
+                # For minimal signal delay, go through all points in the intersection.
+                for point in intersection:
+
+                    # Get the minimal delay value for this point.
+                    updateMinimalDelayInfo(point, segment1, segment2)
+
+                    # Update the best if needed.
+                    if point.minimalSignalDelay < minimalDelayPoint.minimalSignalDelay and point.x != 0 and point.y != 0:
+                        minimalDelayPoint = Point(point.x, point.y)
+                        minimalDelayPoint.minimalSignalDelay = point.minimalSignalDelay
+
+
+    return {'closest':closestPoint.distance,'minDelay':minimalDelayPoint.minimalSignalDelay}
 
 
 def solveProblem(fileName):
@@ -183,8 +183,9 @@ def solveProblem(fileName):
     wire1 = parseInstructions(raw[0].rstrip('\n'))
     wire2 = parseInstructions(raw[1].rstrip('\n'))
 
-    # Calculate the intersection point with minimal distance.
-    return closestIntersection(wire1, wire2)
+    # Calculate the values for dat 3.
+    return findMinimalValues(wire1, wire2)
 
 result = solveProblem(FILENAME)
-print('Distance to the closest intersection: ' + str(result))
+print('Distance to the closest intersection: ' + str(result['closest']))
+print('Minimal signal delay: ' + str(result['minDelay']))
