@@ -18,7 +18,7 @@ def main(fileName):
     # Find the result and print it.
     result = findBest(asteroids)
     print('Best location for the station: ({},{})'.format(result['bestx'], result['besty']))
-    print('Number of asteroids in sight: {}'.format(result['number']))
+    print('Number of asteroids in sight: {}'.format(result['visibles']))
 
     return result
 
@@ -74,35 +74,6 @@ def findBest(asteroids):
             if not foundBlocking:
                 visiblesFromAsteroid +=1
                 continue
-                '''
-            # Calculate the indexes of blocking asteroids.
-            gcd = math.gcd(abs(candidate.i - asteroid.i), abs(candidate.j - asteroid.j))
-            if gcd != 0:
-                # There can be asteroids in between, only in this case. Find steps
-                istep = abs(candidate.i - asteroid.i) / gcd
-                jstep = abs(candidate.j - asteroid.j) / gcd
-
-                # Go through all the asteroids and check if any one blocks the candidate.
-                foundBlocking = False
-                for blocking in asteroids:
-                    if blocking == asteroid or blocking == candidate:
-                        continue
-                    elif asteroidBlockingAnother(asteroid, blocking, candidate, istep, jstep):
-                        # This is a blocking asteroid, break.
-                        foundBlocking = True
-                        break
-                
-                if not foundBlocking:
-                    print('\t\tvisible')
-                    visiblesFromAsteroid += 1
-                else:
-                    print('\t\tno visible')
-            else:
-                # The candidate is not blocked by any other asteroid.
-                # Count it as visible.
-                print('\t\tvisible')
-                visiblesFromAsteroid += 1
-                continue'''
 
         #print('Asteroide en ({},{})->{}'.format(asteroid.i, asteroid.j, visiblesFromAsteroid))
 
@@ -113,7 +84,7 @@ def findBest(asteroids):
 
         #print('Mejor asteroide en ({},{})->{}'.format(bestAsteroid.i, bestAsteroid.j, bestNumVisibles))
 
-    return {'bestx':bestAsteroid.j, 'besty':bestAsteroid.i, 'number':bestNumVisibles}
+    return {'bestx':bestAsteroid.j, 'besty':bestAsteroid.i, 'visibles':bestNumVisibles}
 
 
 # Decides if blocking is blocking asteroid according to the steps.
