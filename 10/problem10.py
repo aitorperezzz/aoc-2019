@@ -2,10 +2,12 @@ import math
 
 FILENAME = 'input.dat'
 
-class Asteroid():
-    def __init__(self, i, j):
+class Place():
+    def __init__(self, i, j, asteroid):
         self.i = i
         self.j = j
+        self.asteroid = asteroid
+        self.visible = True
 
 def main(fileName):
     # Get the input from the file.
@@ -16,89 +18,107 @@ def main(fileName):
     asteroids = parseRawInput(rawLines)
 
     # Find the result and print it.
-    result = findBest(asteroids)
+    result = findBestLocation(asteroids['asteroids'], asteroids['number'])
     print('Best location for the station: ({},{})'.format(result['bestx'], result['besty']))
     print('Number of asteroids in sight: {}'.format(result['visibles']))
 
     return result
 
-# Parse raw lines to a double array of asteroids.
+# Parse raw lines to a list of asteroid objects.
 def parseRawInput(lines):
     asteroids = []
+    number = 0
 
     for i in range(len(lines)):
+        asteroids.append([])
         for j in range(len(lines[i])):
             if lines[i][j] == '#':
-                asteroids.append(Asteroid(i, j))
+                number += 1
+                asteroids[i].append(Place(i, j, True))
+            elif lines[i][j] == '.':
+                asteroids[i].append(Place(i, j, False))
 
-    return asteroids
+    return {'asteroids':asteroids, 'number':number}
 
 
-# Receives a double array of asteroids and returns the best location
-# for a station and the number of asteroids in sight.
-def findBest(asteroids):
+# Receives a double array of asteroids and finds the best location
+# for a station and the number of asteroids visible from there.
+def findBestLocation(asteroids, number):
+
+    # Keep the dimensions of the board.
+    idim = len(asteroids)
+    jdim = len(asteroids[0])
+
     # Number of asteroids visible from the best spot.
-    bestNumVisibles = -1
+    bestVisibles = -1
 
-    for asteroid in asteroids:
+    # Go through all asteroids checking the number of visibles from each one.
+    for i in range(idim):
+        for j in range(jdim):
 
-        #print('asteroide: ({},{})'.format(asteroid.i, asteroid.j))
-        # Find the number of visible asteroids from this one.
-        visiblesFromAsteroid = 0
-
-        # Go through all the other asteroids and check if they're blocked by another.
-        for candidate in asteroids:
-
-            #print('\tcomprobando ({},{})'.format(candidate.i, candidate.j))
-
-            # Do not check the same asteroid.
-            if asteroid == candidate:
+            # Only analyze asteroids.
+            if not asteroids[i][j].asteroid:
                 continue
 
-            gcd = math.gcd(abs(candidate.i - asteroid.i), abs(candidate.j - asteroid.j))
-            if gcd == 0:
-                # This candidate cannot be blocked.
-                visiblesFromAsteroid += 1
-                continue
+            # Grab a copy of asteroids as the testing ones.
+            # Set the number of visibles to the initial value.
+            testing = []
+            copyBoard(asteroids, testing, idim, jdim)
+            visibles = number - 1
 
-            # Check if each of the other asteroids block the view.
-            foundBlocking = False
-            for blocking in asteroids:
-                    if blocking == asteroid or blocking == candidate:
+            # Go through all the testing asteroids and remove the ones
+            # blocked by those.
+            for iblocking in range(idim):
+                for jblocking in range(jdim):
+
+                    # Skip if this is the original asteroid.
+                    if i == iblocking and j == jblocking:
                         continue
-                    elif asteroidBlockingAnother(asteroid, blocking, candidate):
-                        # This is a blocking asteroid, break.
-                        foundBlocking = True
-                        break
 
-            if not foundBlocking:
-                visiblesFromAsteroid +=1
-                continue
+                    # Skip if this is not an asteroid or not visible.
+                    if not testing[iblocking][jblocking].asteroid or not testing[iblocking][jblocking].visible:
+                        continue
 
-        #print('Asteroide en ({},{})->{}'.format(asteroid.i, asteroid.j, visiblesFromAsteroid))
+                    # Calculate the steps in i and j.
+                    gcd = math.gcd(abs(iblocking - i), abs(jblocking - j))
+                    istep = int((iblocking - i) / gcd) if gcd != 0 else int(iblocking - i)
+                    jstep = int((jblocking - j) / gcd) if gcd != 0 else int(jblocking - j)
 
-        # Update the best asteroid if needed.
-        if visiblesFromAsteroid > bestNumVisibles:
-            bestNumVisibles = visiblesFromAsteroid
-            bestAsteroid = Asteroid(asteroid.i, asteroid.j)
+                    # Remove asteroids following the steps.
+                    inext = iblocking + istep
+                    jnext = jblocking + jstep
+                    while inext >= 0 and inext < idim and jnext >= 0 and jnext < jdim:
+                        if testing[inext][jnext].asteroid and testing[inext][jnext].visible:
+                            testing[inext][jnext].visible = False
+                            visibles -= 1
+                        inext += istep
+                        jnext += jstep
 
-        #print('Mejor asteroide en ({},{})->{}'.format(bestAsteroid.i, bestAsteroid.j, bestNumVisibles))
+            # Update the best asteroid if needed.
+            if visibles > bestVisibles:
+                bestVisibles = visibles
+                bestAsteroid = {'i':i, 'j':j}
 
-    return {'bestx':bestAsteroid.j, 'besty':bestAsteroid.i, 'visibles':bestNumVisibles}
+    return {'bestx':bestAsteroid['j'], 'besty':bestAsteroid['i'], 'visibles':bestVisibles}
 
+# Copies the origin board to destination.
+def copyBoard(origin, destination, idim, jdim):
+    for i in range(idim):
+        destination.append([])
+        for j in range(jdim):
+            destination[i].append(Place(i, j, origin[i][j].asteroid))
 
-# Decides if blocking is blocking asteroid according to the steps.
-def asteroidBlockingAnother(asteroid, blocking, candidate):
-    # Check if the coordinates are between bounds.
-    middlei = min(asteroid.i, candidate.i) <= blocking.i and blocking.i <= max(asteroid.i, candidate.i)
-    middlej = min(asteroid.j, candidate.j) <= blocking.j and blocking.j <= max(asteroid.j, candidate.j)
-    if not (middlei and middlej):
-        return False
+# Prints a board of asteroids.
+def printBoard(asteroids, idim, jdim):
+    for i in range(idim):
+        for j in range(jdim):
+            if asteroids[i][j].asteroid and asteroids[i][j].visible:
+                print('#', end='')
+            else:
+                print('.', end='')
 
-    # Check the three points are alligned.
-    return (asteroid.j - blocking.j) * (asteroid.i - candidate.i) == (asteroid.j - candidate.j) * (asteroid.i - blocking.i)
-
-
+        print()
+    print()
 
 # Call the main function
 if __name__ == '__main__':
