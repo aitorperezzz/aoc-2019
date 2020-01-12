@@ -43,6 +43,27 @@ class Segment():
         self.steps = 0
 
 
+def main():
+    # Calculate results and print them to the terminal.
+    result = calculateResults(FILENAME)
+
+    print('Distance to the closest intersection: ' + str(result['closest']))
+    print('Minimal signal delay: ' + str(result['minDelay']))
+
+
+def calculateResults(fileName):
+    # Open the input file.
+    with open(fileName, 'r') as file:
+        raw = file.readlines()
+
+    # Parse both of the wire instructions into wire segments.
+    wire1 = parseInstructions(raw[0].rstrip('\n'))
+    wire2 = parseInstructions(raw[1].rstrip('\n'))
+
+    # Calculate the values for dat 3.
+    return findMinimalValues(wire1, wire2)
+
+
 # Receives a line of raw instructions and returns a list of segments.
 def parseInstructions(raw):
     segments = []
@@ -174,18 +195,6 @@ def findMinimalValues(wire1, wire2):
     return {'closest':closestPoint.distance,'minDelay':minimalDelayPoint.minimalSignalDelay}
 
 
-def solveProblem(fileName):
-    # Open the input file.
-    with open(fileName, 'r') as file:
-        raw = file.readlines()
-
-    # Parse both of the wire instructions into wire segments.
-    wire1 = parseInstructions(raw[0].rstrip('\n'))
-    wire2 = parseInstructions(raw[1].rstrip('\n'))
-
-    # Calculate the values for dat 3.
-    return findMinimalValues(wire1, wire2)
-
-result = solveProblem(FILENAME)
-print('Distance to the closest intersection: ' + str(result['closest']))
-print('Minimal signal delay: ' + str(result['minDelay']))
+# Call main function.
+if __name__ == '__main__':
+    main()

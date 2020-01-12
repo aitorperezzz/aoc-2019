@@ -1,6 +1,4 @@
 import unittest
-
-# Import the module to be tested.
 import problem1
 
 # Define the test class.
@@ -16,4 +14,6 @@ class TestFuelMass(unittest.TestCase):
         self.assertEqual(problem1.calculateTotalFuelMass(1969), 966)
         self.assertEqual(problem1.calculateTotalFuelMass(100756), 50346)
 
-unittest.main()
+# Run the main function if the file is executed, not imported.
+if __name__ == '__main__':
+    unittest.main()

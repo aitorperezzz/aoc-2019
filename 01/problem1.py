@@ -1,6 +1,17 @@
 # Import modules.
 import math
 
+# Decide the name of the input file.
+FILENAME = 'input.dat'
+
+def main():
+    # Calculate results and print them to the terminal.
+    result = fuelForAllModules(FILENAME)
+
+    print('Fuel required as per part one: {}'.format(result['fuel']))
+    print('Fuel required as per part two: {}'.format(result['totalFuel']))
+
+
 # Receives the name of an input file and calculates fuel required for all modules
 # listed inside that file, in both ways (part one and part two).
 def fuelForAllModules(fileName):
@@ -12,6 +23,7 @@ def fuelForAllModules(fileName):
     for mass in masses:
         fuel += calculateFuelMass(mass)
         totalFuel += calculateTotalFuelMass(mass)
+
     return {'fuel':fuel, 'totalFuel':totalFuel}
 
 # Calculates the fuel required for a mass as per part one.
@@ -23,12 +35,6 @@ def calculateTotalFuelMass(mass):
     fuelRequired = calculateFuelMass(mass)
     return fuelRequired + calculateTotalFuelMass(fuelRequired) if fuelRequired >= 0 else 0
 
-# Decide the name of the input file.
-FILENAME = 'input.dat'
-
-# Calculate the results of part one and two.
-result = fuelForAllModules(FILENAME)
-
-# Print the results to the terminal.
-print('Fuel required as per part one: {}'.format(result['fuel']))
-print('Fuel required as per part two: {}'.format(result['totalFuel']))
+# Call main function.
+if __name__ == '__main__':
+    main()
