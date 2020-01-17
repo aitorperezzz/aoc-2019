@@ -10,7 +10,7 @@ def main(filename):
 
     # Keep a backup of the initial memory.
     memory = computer.copyProgram(program)
-    
+ 
     # Change some values in the program.
     program[1] = 12
     program[2] = 2
