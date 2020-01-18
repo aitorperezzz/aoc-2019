@@ -1,5 +1,4 @@
 # computer.py is the module for executing intcode programs.
-
 import pdb
 
 # Define the opcodes.
@@ -44,9 +43,15 @@ def copyProgram(initial):
     
     return result
 
-def executeProgram(program):
+# If the function receives an optional list of numbers, it will assign them
+# in order to the input instruction calls until none are left.
+def executeProgram(program, inputs=None, terminal=True):
     position = 0
     length = len(program)
+
+    # Return a list with the results of all output instructions.
+    outputs = []
+
     while position < length:
 
         # Parse the next opcode.
@@ -58,9 +63,9 @@ def executeProgram(program):
         elif opcode.opcode == OPCODE_MULTIPLY:
             position = executeMultiplication(program, position, opcode.modes)
         elif opcode.opcode == OPCODE_INPUT:
-            position = executeInput(program, position)
+            position = executeInput(program, position, inputs)
         elif opcode.opcode == OPCODE_OUTPUT:
-            position = executeOutput(program, position, opcode.modes)
+            position = executeOutput(program, position, opcode.modes, outputs, terminal)
         elif opcode.opcode == OPCODE_JUMP_IF_TRUE:
             position = executeJumpIfTrue(program, position, opcode.modes)
         elif opcode.opcode == OPCODE_JUMP_IF_FALSE:
@@ -70,9 +75,12 @@ def executeProgram(program):
         elif opcode.opcode == OPCODE_EQUALS:
             position = executeEquals(program, position, opcode.modes)
         elif opcode.opcode == OPCODE_HALT:
-            return program
+            return outputs
         else:
             print('ERROR: opcode {} not recognised by the computer'.format(program[position]))
+            return outputs
+    
+    return outputs
 
 # Receives a starting position and a program, and returns the values for the parameters.
 # If in positional mode, it accessess the address, else it returns the value itself.
@@ -107,15 +115,29 @@ def executeMultiplication(program, position, modes):
 
     return position + 4
 
-def executeInput(program, position):
-    number = input('Input: ')
+def executeInput(program, position, inputs):
+    # Decide if the input was given, else ask for it from the command line.
+    if inputs != None and len(inputs) >= 1:
+        number = inputs[0]
+        del inputs[0]
+    else:
+        number = input('Input: ')
+
+    # Store it at the selected position.
     program[program[position + 1]] = int(number)
 
     return position + 2
 
-def executeOutput(program, position, modes):
+def executeOutput(program, position, modes, outputs, terminal):
+    # Find the value to output.
     values = parseParameters(program, position + 1, modes, 1)
-    print('Output: {}'.format(values[0]))
+
+    # Store the value in the output list.
+    outputs.append(values[0])
+
+    # Print to the terminal if requested.
+    if terminal:
+        print('Output: {}'.format(values[0]))
 
     return position + 2
 
