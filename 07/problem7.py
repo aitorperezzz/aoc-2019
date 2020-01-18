@@ -6,20 +6,27 @@ import pdb
 
 # Decide the filename.
 FILENAME = 'input.dat'
-if len(sys.argv) == 2:
-    FILENAME = sys.argv[1]
 
 def main(filename):
+
+    # Solve part one of the problem.
+    resultsPartOne = solvePartOne(filename)
+
+    print('Part 1. Best output for thrusters: {}'.format(resultsPartOne['bestOutput']))
+    print('Part 1. Best sequence for thrusters: {}'.format(resultsPartOne['bestSettings']))
+
+# Solves the first part of the problem.
+def solvePartOne(filename):
 
     # Load the amplifier software.
     amplifierSoftware = computer.readProgramFromFile(filename)
 
     # Create a table with all possible settings.
     settings = []
-    currentSettings = getNextCombination(None, 5)
+    currentSettings = getNextPermutation(None, 0, 5)
     while currentSettings != None:
         settings.append(copyList(currentSettings))
-        currentSettings = getNextCombination(currentSettings, 5)
+        currentSettings = getNextPermutation(currentSettings, 0, 5)
 
     # Create the results table, initialized to None.
     results = []
@@ -31,9 +38,8 @@ def main(filename):
     # Fill in the results table.
     for i in range(len(results)):
         for j in range(len(results[i])):
-            currentInput = None
             if i - 1 >= 0:
-                # Decide if all the row of settings is the same until position j (included).
+                # Decide if the previous row of settings is the same until position j included.
                 differ = False
                 for k in range(j + 1):
                     if settings[i][k] != settings[i - 1][k]:
@@ -53,7 +59,7 @@ def main(filename):
             # Run the operation.
             results[i][j] = computer.executeProgram(program, [settings[i][j], currentInput], False)[0]
 
-    # Find the best value in the table.
+    # Find the best output value and the best sequence.
     bestOutput = - math.inf
     index = 0
     for k in range(len(results)):
@@ -62,39 +68,37 @@ def main(filename):
             index = k
     bestSettings = settings[index]
 
-    print('The best output for thrusters is {}'.format(bestOutput))
-    print('best sequence for thrusters: {}'.format(bestSettings))
+    return {'bestOutput':bestOutput, 'bestSettings': bestSettings}
 
-# Gets an array with a permutation and returns the next one.
-# Returns None if it reached the end.
-def getNextCombination(combination, size):
-    #pdb.set_trace()
-    if combination == None:
-        return list(range(size))
+
+# Receives a permutation and returns the next one.
+def getNextPermutation(permutation, begin, size):
+    # If None is given, provide the first permutation.
+    if permutation == None:
+        return list(range(begin, begin + size))
     else:
         for i in reversed(range(size - 1)):
 
             # Look for the first time a number is lesser than the next one.
-            if combination[i] < combination[i + 1]:
+            if permutation[i] < permutation[i + 1]:
                 # Get a sorted list of the numbers we can assign to position i.
-                available = sorted(combination[(i + 1):])
+                available = sorted(permutation[(i + 1):])
 
                 # Get the smallest one that is bigger than the i-th.
                 for j in range(len(available)):
-                    if available[j] > combination[i]:
-                        combination[i] = available[j]
+                    if available[j] > permutation[i]:
+                        permutation[i] = available[j]
                         break
 
                 # Order the rest of the sequence with the remaining numbers.
                 position = i + 1
                 for j in range(size):
-                    if not j in combination[:(i + 1)]:
-                        combination[position] = j
+                    if not j in permutation[:(i + 1)]:
+                        permutation[position] = j
                         position += 1
-                
-                return combination
+ 
+                return permutation
 
-                
         return None
 
 # Copies a list and returns it.
