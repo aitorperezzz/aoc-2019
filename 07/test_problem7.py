@@ -14,6 +14,10 @@ class TestProblem7(unittest.TestCase):
         resultsTest1 = problem7.solvePartOne('test3.dat')
         self.assertEqual(resultsTest1['bestOutput'], 65210)
         self.assertEqual(resultsTest1['bestSettings'], [1,0,4,3,2])
+    
+    def testPartTwo(self):
+        self.assertEqual(problem7.solvePartTwo('test4.dat'), 139629729)
+        self.assertEqual(problem7.solvePartTwo('test5.dat'), 18216)
 
 if __name__ == '__main__':
     unittest.main()
