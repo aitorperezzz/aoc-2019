@@ -19,7 +19,7 @@ def main(filename):
 def solvePartOne(filename):
 
     # Load the amplifier software.
-    amplifierSoftware = computer.readProgramFromFile(filename)
+    amplifierSoftware = computer.readInstructionsFromFile(filename)
 
     # Create a table with all possible settings.
     settings = []
@@ -27,6 +27,64 @@ def solvePartOne(filename):
     while currentSettings != None:
         settings.append(copyList(currentSettings))
         currentSettings = getNextPermutation(currentSettings, 0, 5)
+
+    # Create the results table, initialized to None.
+    results = []
+    for i in range(len(settings)):
+        results.append([])
+        for j in range(len(settings[i])):
+            results[i].append(None)
+
+    # Fill in the results table.
+    for i in range(len(results)):
+        for j in range(len(results[i])):
+            if i - 1 >= 0:
+                # Decide if the previous row of settings is the same until position j included.
+                differ = False
+                for k in range(j + 1):
+                    if settings[i][k] != settings[i - 1][k]:
+                        # The settings are not the same.
+                        differ = True
+                        break
+                
+                # If the rows of settings do not differ, copy the value and move on.
+                if not differ:
+                    results[i][j] = results[i - 1][j]
+                    continue
+            
+            # Get a copy of the amplifier software and decide the input value.
+            program = computer.Program(amplifierSoftware)
+            currentInput = results[i][j - 1] if j - 1 >= 0 else 0
+            program.setInputs([settings[i][j], currentInput])
+            program.printOutputs(False)
+
+            # Run the operation.
+            program.execute()
+            results[i][j] = program.getOutputs()[0]
+
+    # Find the best output value and the best sequence.
+    bestOutput = - math.inf
+    index = 0
+    for k in range(len(results)):
+        if results[k][4] > bestOutput:
+            bestOutput = results[k][4]
+            index = k
+    bestSettings = settings[index]
+
+    return {'bestOutput':bestOutput, 'bestSettings': bestSettings}
+
+
+def solvePartTwo(filename):
+
+    # Load the amplifier software.
+    amplifierSoftware = computer.readProgramFromFile(filename)
+
+    # Create a table with all possible settings.
+    settings = []
+    currentSettings = getNextPermutation(None, 5, 5)
+    while currentSettings != None:
+        settings.append(copyList(currentSettings))
+        currentSettings = getNextPermutation(currentSettings, 5, 5)
 
     # Create the results table, initialized to None.
     results = []
@@ -69,7 +127,6 @@ def solvePartOne(filename):
     bestSettings = settings[index]
 
     return {'bestOutput':bestOutput, 'bestSettings': bestSettings}
-
 
 # Receives a permutation and returns the next one.
 def getNextPermutation(permutation, begin, size):

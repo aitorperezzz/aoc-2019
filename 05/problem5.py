@@ -10,7 +10,7 @@ if len(sys.argv) == 2:
 # Read and execute.
 def main(filename):
     program = computer.readProgramFromFile(filename)
-    computer.executeProgram(program)
+    program.execute()
 
 # Execute main function if the program is ran.
 if __name__ == '__main__':
