@@ -1,4 +1,4 @@
-# computer.py is the module for executing intcode programs.
+# computer.py is the module for executing Intcode programs.
 import pdb
 
 # Define the opcodes.
@@ -23,21 +23,23 @@ FINISH_HALT = 0
 FINISH_FIRST_OUTPUT = 1
 FINISH_ERROR = 10
 
-# A class that defines a program.
+# This class defines a program that can be executed by the Intcode computer.
 class Program():
-    # If I don't receive instructions, set them to an empty list.
+    # If no instructions are given, set them to an empty list.
     def __init__(self, instructions=[]):
-        # Copy the instructions.
+        # Get a copy of the instructions.
         self.instructions = copyList(instructions)
         self.length = len(self.instructions)
 
-        # Set some default values.
+        # Set the default execution variables.
         self.position = 0
-        self.terminal = True
         self.inputs = []
         self.outputs = []
-        self.returnOnOutput = False
         self.relativeBase = 0
+
+        # Set the default config variables.
+        self.terminal = True
+        self.returnOnOutput = False
     
     # The program receives a new set of instructions.
     def setInstructions(self, instructions):
@@ -48,13 +50,25 @@ class Program():
     def getInstructions(self):
         return copyList(self.instructions)
     
-    # Decide if you want the outputs printed to the terminal.
-    def printOutputs(self, decision):
-        self.terminal = decision
+    # Resets all the relevant variables for the execution.
+    def resetExecutionState(self):
+        self.position = 0
+        self.inputs = []
+        self.outputs = []
+        self.relativeBase = 0
     
     # Reset the instruction position to the beginning.
     def resetPosition(self):
         self.position = 0
+    
+    # Resets all the config variables.
+    def resetConfigState(self):
+        self.terminal = True
+        self.returnOnOutput = False
+    
+    # Decide if you want the outputs printed to the terminal.
+    def printOutputs(self, decision):
+        self.terminal = decision
     
     # Requests that the program returns on the first output.
     def returnOnFirstOutput(self, decision):
@@ -65,7 +79,7 @@ class Program():
     def setInputs(self, input):
         self.inputs = copyList(input)
     
-    # Adds to the existing inputs.
+    # Adds to the existing inputs. values parameter has to be a list.
     def appendToInputs(self, values):
         for value in values:
             self.inputs.append(value)
@@ -77,13 +91,14 @@ class Program():
     def emptyOutputs(self):
         self.outputs = []
     
-    # Receives a number as the address we want to write to. If there is no memory yet at
+    # Receives a number that represents an address. If there is no memory yet at
     # that address, fill the existing instructions until that address with zeros.
     def check(self, number):
         if number >= len(self.instructions):
             for i in range(number - len(self.instructions) + 1):
                 self.instructions.append(0)
         
+        self.length = len(self.instructions)
         return number
     
     # The place to store a value depends if the address is given in positional
