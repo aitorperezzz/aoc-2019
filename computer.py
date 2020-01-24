@@ -10,28 +10,34 @@ OPCODE_JUMP_IF_TRUE = 5
 OPCODE_JUMP_IF_FALSE = 6
 OPCODE_LESS_THAN = 7
 OPCODE_EQUALS = 8
+OPCODE_RELBASE_OFFSET = 9
 OPCODE_HALT = 99
 
 # Define the parameter modes.
-PARAMETER_POSITION = 0
-PARAMETER_VALUE = 1
+PARAM_MODE_POSITION = 0
+PARAM_MODE_VALUE = 1
+PARAM_MODE_RELATIVE = 2
 
-# These values indicate if a program has truly halted or not yet.
+# Different ways a program can finish its execution.
 FINISH_HALT = 0
 FINISH_FIRST_OUTPUT = 1
 FINISH_ERROR = 10
 
 # A class that defines a program.
 class Program():
+    # If I don't receive instructions, set them to an empty list.
     def __init__(self, instructions=[]):
         # Copy the instructions.
         self.instructions = copyList(instructions)
         self.length = len(self.instructions)
+
+        # Set some default values.
         self.position = 0
         self.terminal = True
         self.inputs = []
         self.outputs = []
         self.returnOnOutput = False
+        self.relativeBase = 0
     
     # The program receives a new set of instructions.
     def setInstructions(self, instructions):
@@ -71,32 +77,51 @@ class Program():
     def emptyOutputs(self):
         self.outputs = []
     
+    # Receives a number as the address we want to write to. If there is no memory yet at
+    # that address, fill the existing instructions until that address with zeros.
+    def check(self, number):
+        if number >= len(self.instructions):
+            for i in range(number - len(self.instructions) + 1):
+                self.instructions.append(0)
+        
+        return number
+    
+    # The place to store a value depends if the address is given in positional
+    # or relative mode.
+    def storeAt(self, address, mode, value):
+        if mode == PARAM_MODE_POSITION:
+            self.instructions[self.check(address)] = value
+        elif mode == PARAM_MODE_RELATIVE:
+            self.instructions[self.check(address + self.relativeBase)] = value
+    
     # Executes the instructions of this program with the current settings.
     def execute(self):
         while self.position < self.length:
 
             # Parse the next opcode.
-            opcode = Opcode(self.instructions[self.position])
+            opcode = Opcode(self.instructions[self.check(self.position)])
 
             # Execute the appropriate operation.
             if opcode.opcode == OPCODE_SUM:
-                self.position = executeSum(self.instructions, self.position, opcode.modes)
+                self.executeSum(opcode)
             elif opcode.opcode == OPCODE_MULTIPLY:
-                self.position = executeMultiplication(self.instructions, self.position, opcode.modes)
+                self.executeMultiplication(opcode)
             elif opcode.opcode == OPCODE_INPUT:
-                self.position = executeInput(self.instructions, self.position, self.inputs)
+                self.executeInput(opcode)
             elif opcode.opcode == OPCODE_OUTPUT:
-                self.position = executeOutput(self.instructions, self.position, opcode.modes, self.outputs, self.terminal)
+                self.executeOutput(opcode)
                 if self.returnOnOutput:
                     return FINISH_FIRST_OUTPUT
             elif opcode.opcode == OPCODE_JUMP_IF_TRUE:
-                self.position = executeJumpIfTrue(self.instructions, self.position, opcode.modes)
+                self.executeJumpIfTrue(opcode)
             elif opcode.opcode == OPCODE_JUMP_IF_FALSE:
-                self.position = executeJumpIfFalse(self.instructions, self.position, opcode.modes)
+                self.executeJumpIfFalse(opcode)
             elif opcode.opcode == OPCODE_LESS_THAN:
-                self.position = executeLessThan(self.instructions, self.position, opcode.modes)
+                self.executeLessThan(opcode)
             elif opcode.opcode == OPCODE_EQUALS:
-                self.position = executeEquals(self.instructions, self.position, opcode.modes)
+                self.executeEquals(opcode)
+            elif opcode.opcode == OPCODE_RELBASE_OFFSET:
+                self.executeRelativeBaseOffset(opcode)
             elif opcode.opcode == OPCODE_HALT:
                 return FINISH_HALT
             else:
@@ -104,6 +129,100 @@ class Program():
                 return FINISH_ERROR
     
         return FINISH_ERROR
+    
+    # Execute the sum operation.
+    def executeSum(self, opcode):
+        # Parse the parameters to know the values.
+        values = parseParameters(self.instructions, self.position + 1, opcode.modes, 2, self.relativeBase, self)
+
+        # Store the result at the appropriate address.
+        mode = opcode.modes[2] if len(opcode.modes) >= 3 else PARAM_MODE_POSITION
+        self.storeAt(self.instructions[self.check(self.position + 3)], mode, values[0] + values[1])
+        #self.instructions[self.check(self.instructions[self.check(self.position + 3)])] = values[0] + values[1]
+
+        # Update the position of the next instruction.
+        self.position += 4
+    
+    def executeMultiplication(self, opcode):
+        # Parse the parameters to know the values.
+        values = parseParameters(self.instructions, self.position + 1, opcode.modes, 2, self.relativeBase, self)
+
+        # Store the result at the appropriate address.
+        mode = opcode.modes[2] if len(opcode.modes) >= 3 else PARAM_MODE_POSITION
+        self.storeAt(self.instructions[self.check(self.position + 3)], mode, values[0] * values[1])
+        #self.instructions[self.check(self.instructions[self.check(self.position + 3)])] = values[0] * values[1]
+
+        # Jump four positions.
+        self.position += 4
+
+    def executeInput(self, opcode):
+        # Decide if the input was given, else ask for it from the command line.
+        if self.inputs != None and len(self.inputs) >= 1:
+            number = self.inputs[0]
+            del self.inputs[0]
+        else:
+            number = input('Input: ')
+
+        # Store it at the selected position.
+        mode = opcode.modes[0] if len(opcode.modes) >= 1 else PARAM_MODE_POSITION
+        self.storeAt(self.instructions[self.check(self.position + 1)], mode, int(number))
+        #self.instructions[self.check(self.instructions[self.check(values[0])])] = int(number)
+
+        # Update position.
+        self.position += 2
+    
+    def executeOutput(self, opcode):
+        # Find the value to output.
+        values = parseParameters(self.instructions, self.position + 1, opcode.modes, 1, self.relativeBase, self)
+
+        # Store the value in the output list.
+        self.outputs.append(values[0])
+
+        # Print to the terminal if requested.
+        if self.terminal:
+            print('Output: {}'.format(values[0]))
+
+        # Update the position.
+        self.position += 2
+
+    def executeJumpIfTrue(self, opcode):
+        values = parseParameters(self.instructions, self.position + 1, opcode.modes, 2, self.relativeBase, self)
+
+        self.position = values[1] if values[0] != 0 else self.position + 3
+    
+    def executeJumpIfFalse(self, opcode):
+        values = parseParameters(self.instructions, self.position + 1, opcode.modes, 2, self.relativeBase, self)
+
+        self.position = values[1] if values[0] == 0 else self.position + 3
+    
+    def executeLessThan(self, opcode):
+        values = parseParameters(self.instructions, self.position + 1, opcode.modes, 2, self.relativeBase, self)
+
+        # Store a 1 if less than, else store a 0.
+        mode = opcode.modes[2] if len(opcode.modes) >= 3 else PARAM_MODE_POSITION
+        self.storeAt(self.instructions[self.check(self.position + 3)], mode, 1 if values[0] < values[1] else 0)
+        #self.instructions[self.check(self.instructions[self.check(self.position + 3)])] = 1 if values[0] < values[1] else 0
+
+        self.position += 4
+    
+    def executeEquals(self, opcode):
+        values = parseParameters(self.instructions, self.position + 1, opcode.modes, 2, self.relativeBase, self)
+
+        # Store a 1 if equals, else store a 0.
+        mode = opcode.modes[2] if len(opcode.modes) >= 3 else PARAM_MODE_POSITION
+        self.storeAt(self.instructions[self.check(self.position + 3)], mode, 1 if values[0] == values[1] else 0)
+        #self.instructions[self.check(self.instructions[self.check(self.position + 3)])] = 1 if values[0] == values[1] else 0
+
+        self.position += 4
+    
+    def executeRelativeBaseOffset(self, opcode):
+        values = parseParameters(self.instructions, self.position + 1, opcode.modes, 1, self.relativeBase, self)
+
+        # Adjust the relative base by the value of the only parameter.
+        self.relativeBase += values[0]
+
+        # Jump two positions.
+        self.position += 2
 
 # Stores information about an opcode.
 class Opcode():
@@ -143,84 +262,21 @@ def copyProgram(initialProgram):
 
 # Receives a starting position and a set of instructions, and returns the values for the parameters.
 # If in positional mode, it accessess the address, else it returns the value itself.
-def parseParameters(instructions, position, modes, totalParameters):
+def parseParameters(instructions, position, modes, totalParameters, relativeBase, program):
     values = []
     for i in range(totalParameters):
         if i < len(modes):
-            # We have a code for the parameters's mode.
-            value = instructions[instructions[position + i]] if modes[i] == PARAMETER_POSITION else instructions[position + i]
+            # This parameter has a mode associated with it.
+            if modes[i] == PARAM_MODE_POSITION:
+                value = instructions[program.check(instructions[program.check(position + i)])]
+            elif modes[i] == PARAM_MODE_VALUE:
+                value = instructions[position + i]
+            elif modes[i] == PARAM_MODE_RELATIVE:
+                value = instructions[program.check(instructions[program.check(position + i)]  + relativeBase)]
         else:
-            # The default mode is positional.
-            value = instructions[instructions[position + i]]
+            # No mode has been supplied, the default is position mode.
+            value = instructions[program.check(instructions[program.check(position + i)])]
         values.append(value)
 
     return values
 
-
-def executeSum(instructions, position, modes):
-    # Parse the parameters to know the values.
-    values = parseParameters(instructions, position + 1, modes, 2)
-
-    # Store the result at the appropriate address.
-    instructions[instructions[position + 3]] = values[0] + values[1]
-
-    return position + 4
-
-def executeMultiplication(instructions, position, modes):
-    # Parse the parameters to know the values.
-    values = parseParameters(instructions, position + 1, modes, 2)
-
-    # Store the result at the appropriate address.
-    instructions[instructions[position + 3]] = values[0] * values[1]
-
-    return position + 4
-
-def executeInput(instructions, position, inputs):
-    # Decide if the input was given, else ask for it from the command line.
-    if inputs != None and len(inputs) >= 1:
-        number = inputs[0]
-        del inputs[0]
-    else:
-        number = input('Input: ')
-
-    # Store it at the selected position.
-    instructions[instructions[position + 1]] = int(number)
-
-    return position + 2
-
-def executeOutput(instructions, position, modes, outputs, terminal):
-    # Find the value to output.
-    values = parseParameters(instructions, position + 1, modes, 1)
-
-    # Store the value in the output list.
-    outputs.append(values[0])
-
-    # Print to the terminal if requested.
-    if terminal:
-        print('Output: {}'.format(values[0]))
-
-    return position + 2
-
-def executeJumpIfTrue(instructions, position, modes):
-    values = parseParameters(instructions, position + 1, modes, 2)
-
-    return values[1] if values[0] != 0 else position + 3
-
-def executeJumpIfFalse(instructions, position, modes):
-    values = parseParameters(instructions, position + 1, modes, 2)
-
-    return values[1] if values[0] == 0 else position + 3
-
-def executeLessThan(instructions, position, modes):
-    values = parseParameters(instructions, position + 1, modes, 2)
-
-    instructions[instructions[position + 3]] = 1 if values[0] < values[1] else 0
-
-    return position + 4
-
-def executeEquals(instructions, position, modes):
-    values = parseParameters(instructions, position + 1, modes, 2)
-
-    instructions[instructions[position + 3]] = 1 if values[0] == values[1] else 0
-
-    return position + 4
