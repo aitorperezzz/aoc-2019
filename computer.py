@@ -1,5 +1,6 @@
 # computer.py is the module for executing Intcode programs.
 import pdb
+import math
 
 # Define the opcodes.
 OPCODE_SUM = 1
@@ -20,7 +21,7 @@ PARAM_MODE_RELATIVE = 2
 
 # Different ways a program can finish its execution.
 FINISH_HALT = 0
-FINISH_FIRST_OUTPUT = 1
+FINISH_OUTPUT = 1
 FINISH_ERROR = 10
 
 # This class defines a program that can be executed by the Intcode computer.
@@ -40,7 +41,7 @@ class Program():
 
         # Set the default config variables.
         self.terminal = True
-        self.returnOnOutput = False
+        self.numOutputsToReturn = math.inf
     
     # The program receives a new set of instructions.
     def setInstructions(self, instructions):
@@ -73,7 +74,13 @@ class Program():
     
     # Requests that the program returns on the first output.
     def returnOnFirstOutput(self, decision):
-        self.returnOnOutput = decision
+        if decision:
+            self.numOutputsToReturn = 1
+        else:
+            self.numOutputsToReturn = math.inf
+    
+    def returnOnOutputNumber(self, number):
+        self.numOutputsToReturn = number
     
     # Receives a list of integer inputs and stores them for later use
     # on input instructions.
@@ -152,8 +159,8 @@ class Program():
                 self.executeInput()
             elif self.opcode.opcode == OPCODE_OUTPUT:
                 self.executeOutput()
-                if self.returnOnOutput:
-                    return FINISH_FIRST_OUTPUT
+                if self.numOutputsToReturn == 0:
+                    return FINISH_OUTPUT
             elif self.opcode.opcode == OPCODE_JUMP_IF_TRUE:
                 self.executeJumpIfTrue()
             elif self.opcode.opcode == OPCODE_JUMP_IF_FALSE:
@@ -216,6 +223,9 @@ class Program():
         # Print to the terminal if requested.
         if self.terminal:
             print('Output: {}'.format(values[0]))
+        
+        # Decrease the number of outputs left to return.
+        self.numOutputsToReturn -= 1
 
         # Update the position.
         self.position += 2
