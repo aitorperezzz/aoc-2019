@@ -157,7 +157,7 @@ class TestComputer(unittest.TestCase):
     
     # The tests for problem 7 are inside that folder.
 
-    # Run the tests for the characteristics of problem 7.
+    # Run the tests for the characteristics of problem 9.
     def testProblem9(self):
 
         # Test a program that should produce a copy of itself.
