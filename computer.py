@@ -22,6 +22,8 @@ PARAM_MODE_RELATIVE = 2
 # Different ways a program can finish its execution.
 FINISH_HALT = 0
 FINISH_OUTPUT = 1
+FINISH_PAUSE_INPUT = 2
+FINISH_AFTER_INPUT = 3
 FINISH_ERROR = 10
 
 # This class defines a program that can be executed by the Intcode computer.
@@ -38,10 +40,32 @@ class Program():
         self.inputs = []
         self.outputs = []
         self.relativeBase = 0
+        self.pauseBeforeNextInput = False
+        self.returnAfterInput = False
 
         # Set the default config variables.
         self.terminal = True
         self.numOutputsToReturn = math.inf
+    
+    # Sets a value inside an address.
+    def setMemory(self, address, value):
+        self.instructions[address] = value
+    
+    # Sets a variable to pause execution right before the next input instruction.
+    def pauseBeforeInputInstruction(self, decision):
+        self.pauseBeforeNextInput = decision
+    
+    # After a pause before and input, execute only that input and return.
+    def executeInputAfterPause(self):
+        self.pauseBeforeNextInput = False
+        self.returnAfterInput = True
+        self.execute()
+
+    # Resumes complete execution after an input pause.
+    def resumeAfterPause(self):
+        self.pauseBeforeNextInput = False
+        self.returnAfterInput = False
+        self.execute()
     
     # The program receives a new set of instructions.
     def setInstructions(self, instructions):
@@ -58,6 +82,8 @@ class Program():
         self.inputs = []
         self.outputs = []
         self.relativeBase = 0
+        self.pauseBeforeNextInput = False
+        self.returnAfterInput = False
     
     # Reset the instruction position to the beginning.
     def resetPosition(self):
@@ -66,9 +92,9 @@ class Program():
     # Resets all the config variables.
     def resetConfigState(self):
         self.terminal = True
-        self.returnOnOutput = False
+        self.numOutputsToReturn = math.inf
     
-    # Decide if you want the outputs printed to the terminal.
+    # Decide if the outputs should be printed to the terminal.
     def printOutputs(self, decision):
         self.terminal = decision
     
@@ -79,6 +105,7 @@ class Program():
         else:
             self.numOutputsToReturn = math.inf
     
+    # Decide on the number of outputs before the program halts.
     def returnOnOutputNumber(self, number):
         self.numOutputsToReturn = number
     
@@ -156,7 +183,12 @@ class Program():
             elif self.opcode.opcode == OPCODE_MULTIPLY:
                 self.executeMultiplication()
             elif self.opcode.opcode == OPCODE_INPUT:
+                if self.pauseBeforeNextInput:
+                    return FINISH_PAUSE_INPUT
                 self.executeInput()
+                if self.returnAfterInput:
+                    self.returnAfterInput = False
+                    return FINISH_AFTER_INPUT
             elif self.opcode.opcode == OPCODE_OUTPUT:
                 self.executeOutput()
                 if self.numOutputsToReturn == 0:
