@@ -122,6 +122,7 @@ def solvePartTwo(filename):
 
             # Execute the 'index' amplifier with the previous input.
             amplifiers[index].emptyOutputs()
+            amplifiers[index].returnOnFirstOutput(True)
             lastFinishResult = amplifiers[index].execute()
 
             # Break if the program reached a HALT instruction.
