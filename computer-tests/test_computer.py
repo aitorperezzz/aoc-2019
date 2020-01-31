@@ -190,6 +190,18 @@ class TestComputer(unittest.TestCase):
         program.setInputs([2])
         program.execute()
         self.assertEqual(program.getOutputs()[0], 63441)
+    
+    # Run a test for problem 15.
+    def testProblem15(self):
+
+        sys.path.append('../15')
+        import problem15
+
+        # Load the grid explored by the robot.
+        grid = problem15.exploreGrid('../15/controller.dat')
+
+        self.assertEqual(problem15.solvePartOne(grid), 242)
+        self.assertEqual(problem15.solvePartTwo(grid), 276)
 
 
 if __name__ == '__main__':

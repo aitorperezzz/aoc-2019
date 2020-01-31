@@ -21,6 +21,10 @@ class Grid():
         # Initialize the locations inside the grid.
         self.locations = {}
 
+        # Keep track of the position of the oxygen tank.
+        self.tankx = None
+        self.tanky = None
+
         # Keep track of the extreme values of the grid.
         self.miny = 0
         self.maxy = 0
@@ -89,6 +93,29 @@ class Node():
 
 def main(filename):
 
+    # Explore the area.
+    grid = exploreGrid(filename)
+
+    # Print the area explored.
+    print('State of the room (oxygen tank marked O):')
+    for y in range(grid.miny, grid.maxy + 1):
+        for x in range(grid.minx, grid.maxx + 1):
+            if y in grid.locations and x in grid.locations[y]:
+                print(grid.symbols[grid.locations[y][x]], end='')
+            else:
+                print(grid.symbols[LOCATION_TYPE_EMPTY], end='')
+        print()
+
+    # Calculate the shortest path between the robot and the oxygen tank.
+    steps = solvePartOne(grid)
+    print('\nSmallest number of steps from the robot to the tank: {}'.format(steps))
+
+    # Find the number of minutes it takes to fill the room with oxygen.
+    minutes = solvePartTwo(grid)
+    print('Minutes until the room is filled with oxygen: {}'.format(minutes))
+
+# Receives the filename for the controller software and returns the explored grid.
+def exploreGrid(filename):
     # Load the controller software.
     controller = computer.readProgramFromFile(filename)
     controller.printOutputs(False)
@@ -100,22 +127,37 @@ def main(filename):
     grid = Grid()
     floodFill(startLocation, grid, controller)
 
-    print('State of the room (oxygen tank marked O):')
-    for y in range(grid.miny, grid.maxy + 1):
-        for x in range(grid.minx, grid.maxx + 1):
-            if y in grid.locations and x in grid.locations[y]:
-                print(grid.symbols[grid.locations[y][x]], end='')
-            else:
-                print(grid.symbols[LOCATION_TYPE_EMPTY], end='')
-        print()
+    return grid
 
-    # Calculate the shortest path between the robot and the tank.
+# Solves part one of the problem. Receives the grid and returns the minimal
+# distance from the robot (0,0) to the oxygen tank.
+def solvePartOne(grid):
+
+    # Prepare a dictionary of nodes for Dijkstra algorithm.
     nodes = parseGrid(grid)
-    steps = dijkstra(nodes)
-    print('Smallest number of steps to reach the tank: {}'.format(steps))
+
+    # Calculate the number of steps to reach the tank.
+    return dijkstra(nodes, 0, 0, LOCATION_TYPE_TANK)
 
 
-# Establishes a grid performing flood fill with the help
+# Receives the grid and applies Dijkstra from the oxygen tank.
+# Returns the maximal distance to the oxygen tank.
+def solvePartTwo(grid):
+
+    # Parse the empty nodes and apply Dijkstra to all the empty locations.
+    nodes = parseGrid(grid)
+    dijkstra(nodes, grid.tankx, grid.tanky)
+    
+    # Find the location with the maximal distance value.
+    maxDistance = - math.inf
+    for y in nodes:
+        for x in nodes[y]:
+            if nodes[y][x].distance > maxDistance:
+                maxDistance = nodes[y][x].distance
+    
+    return maxDistance
+
+# Explores a grid performing flood fill with the help
 # of the robot controller.
 def floodFill(currentLocation, grid, controller, lastLocation=None):
     
@@ -130,6 +172,11 @@ def floodFill(currentLocation, grid, controller, lastLocation=None):
     # If this is a wall, do not continue with the algorithm.
     if currentLocation.type == LOCATION_TYPE_WALL:
         return
+    
+    # If this is the oxygen tank, store the value.
+    if currentLocation.type == LOCATION_TYPE_TANK:
+        grid.tankx = currentLocation.x
+        grid.tanky = currentLocation.y
     
     # Perform flood fill in all four directions.
     for movement in movements:
@@ -174,15 +221,15 @@ def parseGrid(grid):
 
     return nodes
 
-# Applies Dijkstra's algorithm to find the shortest path between the position 0,0 and
-# the oxygen tank.
-def dijkstra(nodes):
+# Applies Dijkstra's algorithm. If targetLocation is specified, it returns the minimal number of steps
+# to reach it. If not, it fills the grid with minimal distances from the starting position.
+def dijkstra(nodes, startx, starty, targetLocation=None):
 
     # Set the distance to the initial node to zero.
-    nodes[0][0].distance = 0
+    nodes[starty][startx].distance = 0
 
     # Set the initial node as the current.
-    current = nodes[0][0]
+    current = nodes[starty][startx]
 
     # Create a set of all the unvisited nodes.
     unvisited = {}
@@ -193,7 +240,7 @@ def dijkstra(nodes):
             unvisited[y][x] = nodes[y][x]
 
     # Loop until we find the destination node.
-    while current.type != LOCATION_TYPE_TANK:
+    while targetLocation and current.type != targetLocation or not targetLocation and unvisited:
 
         # Get a list of the unvisited neighbors of the current node.
         neighbors = getNeighbors(current, unvisited)
@@ -208,6 +255,8 @@ def dijkstra(nodes):
 
         # Remove the current node from the unvisited set.
         del unvisited[current.y][current.x]
+        if len(unvisited[current.y].keys()) == 0:
+            del unvisited[current.y]
 
         # Among the neighbors, select the one with the smallest distance.
         smallestDistance = math.inf
@@ -216,8 +265,8 @@ def dijkstra(nodes):
                 if unvisited[y][x].distance < smallestDistance:
                     current = unvisited[y][x]
                     smallestDistance = unvisited[y][x].distance
-    
-    return current.distance
+
+    return current.distance if targetLocation else None
 
 # Returns a list of the neighbors of the current nodes among the nodes provided.
 def getNeighbors(current, nodes): 
