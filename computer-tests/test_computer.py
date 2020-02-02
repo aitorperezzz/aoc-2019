@@ -202,7 +202,15 @@ class TestComputer(unittest.TestCase):
 
         self.assertEqual(problem15.solvePartOne(grid), 242)
         self.assertEqual(problem15.solvePartTwo(grid), 276)
+    
+    # Run a test for problem 17.
+    def testProblem17(self):
 
+        sys.path.append('../17')
+        import problem17
+
+        self.assertEqual(problem17.solvePartOne('../17/ascii.dat')['total'], 6052)
+        self.assertEqual(problem17.solvePartTwo('../17/ascii.dat'), 752491)
 
 if __name__ == '__main__':
     unittest.main()
